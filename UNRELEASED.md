@@ -10,6 +10,8 @@
 
 ### Bug fixes
 
+- Fixed overflowing content styling issue with the `DescriptionList` component ([#2880](https://github.com/Shopify/polaris-react/pull/2880))
+
 ### Documentation
 
 ### Development workflow
