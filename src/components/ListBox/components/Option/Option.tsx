@@ -1,11 +1,10 @@
 import React, {useRef, useEffect, useCallback, memo} from 'react';
 import {TickMinor} from '@shopify/polaris-icons';
 
+// we really want to keep combobox out of this for now because it really slows this down
 // import {useComboBox} from '../../../../utilities/combo-box';
 import {classNames} from '../../../../utilities/css';
 import {useUniqueId} from '../../../../utilities/unique-id';
-// import {Key} from '../../../../types';
-// import {KeypressListener} from '../../../KeypressListener';
 import {Icon} from '../../../Icon';
 import {useListBox} from '../../utilities/hooks/useListBox';
 import {useOptionGroup} from '../../utilities/hooks/useOptionGroup';
@@ -33,7 +32,7 @@ export const Option = memo(function Option({
     onOptionSelect,
     setActiveOptionId,
   } = useListBox();
-  // const {setActiveDescendant, setSuggestion, onOptionSelected} = useComboBox();
+
   const {optionGroupId} = useOptionGroup();
   const listItemRef = useRef<HTMLLIElement>(null);
   const id = useUniqueId('ListBoxOption');

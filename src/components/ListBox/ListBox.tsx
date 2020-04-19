@@ -32,6 +32,7 @@ export interface ListBoxProps {
 export const ListBox = memo(function ListBox({
   children,
   onSelect,
+  allowMultiple,
 }: ListBoxProps) {
   const listBoxClassName = classNames(styles.ListBox);
   const {
@@ -73,8 +74,11 @@ export const ListBox = memo(function ListBox({
         setActiveOptionValue(value);
       }
       onSelect(value);
+      if (!allowMultiple && comboBox && comboBox.onSingleSelectSelected) {
+        comboBox.onSingleSelectSelected();
+      }
     },
-    [activeOptionId, activeOptionValue, onSelect],
+    [activeOptionId, activeOptionValue, allowMultiple, comboBox, onSelect],
   );
 
   const listBoxContext = useMemo(

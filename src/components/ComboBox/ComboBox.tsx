@@ -14,33 +14,27 @@ export interface ComboBoxProps {
   children?: ReactNode;
   activator: React.ReactElement<TextFieldProps>;
   allowMultiple?: boolean;
-  onOptionSelected(id: string): void;
+  // onOptionSelected(id: string): void;
 }
 
-export function ComboBox({
-  children,
-  activator,
-  allowMultiple,
-  onOptionSelected,
-}: ComboBoxProps) {
+export function ComboBox({children, activator}: ComboBoxProps) {
   const [popoverActive, setPopoverActive] = useState(false);
-  const [activeOptionId, setActiveOptionId] = useState<string>();
+  // const [activeOptionId, setActiveOptionId] = useState<string>();
   const [typeAheadText, setTypeAheadText] = useState<string>();
   const [textFieldId, setTextFieldId] = useState<string>();
   const [textFieldLabelId, setTextFieldLabelId] = useState<string>();
   const [listBoxId, setListBoxId] = useState<string>();
   const {isNavigationCollapsed} = useMediaQuery();
 
-  const handleSelectOption = (id: string) => {
+  const handleSingleSelectSelected = () => {
+    // TODO need to prevent this focus from retriggering the Popover. Settimeout doens't work on key press
     focusInput();
-    onOptionSelected(id);
-    if (allowMultiple) return;
     setPopoverActive(false);
   };
 
   const contextValue: ComboBoxContextType = {
-    activeOptionId,
-    setActiveOptionId,
+    // activeOptionId,
+    // setActiveOptionId,
     typeAheadText,
     setTypeAheadText,
     textFieldId,
@@ -49,7 +43,7 @@ export function ComboBox({
     setTextFieldLabelId,
     listBoxId,
     setListBoxId,
-    onOptionSelected: handleSelectOption,
+    onSingleSelectSelected: handleSingleSelectSelected,
   };
 
   const handleFocus = () => {
@@ -111,6 +105,7 @@ export function ComboBox({
       activator={textfieldMarkup}
       preventAutofocus
       fullWidth
+      preferInputActivator={false}
     >
       {children}
     </Popover>
