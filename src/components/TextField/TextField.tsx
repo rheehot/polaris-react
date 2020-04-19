@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {addEventListener} from '@shopify/javascript-utilities/events';
 import {CircleCancelMinor} from '@shopify/polaris-icons';
-
 import {VisuallyHidden} from '../VisuallyHidden';
 import {classNames, variationName} from '../../utilities/css';
 import {useFeatures} from '../../utilities/features';
@@ -10,6 +9,7 @@ import {useUniqueId} from '../../utilities/unique-id';
 import {useIsAfterInitialMount} from '../../utilities/use-is-after-initial-mount';
 import {Labelled, LabelledProps, helpTextID, labelID} from '../Labelled';
 import {Connected} from '../Connected';
+import {useComboBox} from '../../utilities/combo-box';
 import {Error, Key} from '../../types';
 import {Icon} from '../Icon';
 
@@ -167,12 +167,20 @@ export function TextField({
   const [focus, setFocus] = useState(Boolean(focused));
   const isAfterInitial = useIsAfterInitialMount();
 
+  const comboBox = useComboBox();
+
   const id = useUniqueId('TextField', idProp);
 
   const inputRef = useRef<HTMLElement>(null);
   const prefixRef = useRef<HTMLDivElement>(null);
   const suffixRef = useRef<HTMLDivElement>(null);
   const buttonPressTimer = useRef<number>();
+
+  useEffect(() => {
+    const {setTextFieldId, labelId, setLabelId} = comboBox;
+    setTextFieldId && setTextFieldId(id);
+    !labelId && setLabelId && setLabelId(labelID(id));
+  }, [comboBox, id]);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -251,7 +259,7 @@ export function TextField({
   }
 
   const clearButtonMarkup =
-    clearButton && normalizedValue !== '' ? (
+    (clearButton || comboBox) && normalizedValue !== '' ? (
       <button
         type="button"
         testID="clearButton"
@@ -367,7 +375,9 @@ export function TextField({
     labelledBy.push(`${id}Suffix`);
   }
 
-  labelledBy.unshift(labelID(id));
+  if (labelledBy.length) {
+    labelledBy.unshift(labelID(id));
+  }
 
   const inputClassName = classNames(
     styles.Input,
@@ -375,6 +385,41 @@ export function TextField({
     suffix && styles['Input-suffixed'],
     clearButton && styles['Input-hasClearButton'],
   );
+
+  let hintInput;
+
+  if (comboBox && comboBox.suggestion) {
+    const suggestion = comboBox && comboBox.suggestion;
+
+    const suggestionBeginsWithValue =
+      suggestion &&
+      value &&
+      suggestion.toLowerCase().startsWith(value.toLowerCase(), 0);
+
+    const suggestionValue =
+      suggestion && suggestionBeginsWithValue && value
+        ? value + suggestion.substr(value.length)
+        : null;
+
+    const hintInputClassName =
+      suggestionValue &&
+      classNames(
+        styles.Input,
+        styles.HintInput,
+        align && styles[variationName('Input-align', align)],
+        suffix && styles['Input-suffixed'],
+      );
+
+    hintInput =
+      suggestionValue && hintInputClassName ? (
+        <input
+          className={hintInputClassName}
+          readOnly
+          tabIndex={-1}
+          value={suggestionValue}
+        />
+      ) : null;
+  }
 
   const input = React.createElement(multiline ? 'textarea' : 'input', {
     name,
@@ -402,10 +447,13 @@ export function TextField({
     pattern,
     type: inputType,
     'aria-describedby': describedBy.length ? describedBy.join(' ') : undefined,
-    'aria-labelledby': labelledBy.join(' '),
+    'aria-labelledby': labelledBy.length ? labelledBy.join(' ') : undefined,
     'aria-invalid': Boolean(error),
     'aria-owns': ariaOwns,
-    'aria-activedescendant': ariaActiveDescendant,
+    'aria-activedescendant':
+      comboBox && comboBox.activeDescendant
+        ? comboBox.activeDescendant
+        : ariaActiveDescendant,
     'aria-autocomplete': ariaAutocomplete,
     'aria-controls': ariaControls,
     'aria-multiline': normalizeAriaMultiline(multiline),
@@ -434,6 +482,7 @@ export function TextField({
           onClick={handleClick}
         >
           {prefixMarkup}
+          {hintInput}
           {input}
           {suffixMarkup}
           {characterCountMarkup}
@@ -448,6 +497,7 @@ export function TextField({
 
   function handleClearButtonPress() {
     onClearButtonClick && onClearButtonClick(id);
+    !onClearButtonClick && onChange && onChange('', id);
   }
 
   function handleKeyPress(event: React.KeyboardEvent) {
