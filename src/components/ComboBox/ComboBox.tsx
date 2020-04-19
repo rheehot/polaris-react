@@ -1,23 +1,19 @@
-import React, {useState, useRef, ReactNode} from 'react';
+import React, {useState, ReactNode} from 'react';
 
-import {useUniqueId} from '../../utilities/unique-id';
 import {useMediaQuery} from '../../utilities/media-query';
 import {ComboBoxContext, ComboBoxContextType} from '../../utilities/combo-box';
 import {scrollable} from '../shared';
 import type {TextFieldProps} from '../TextField';
 import {Popover} from '../Popover';
 import {EventListener} from '../EventListener';
-import {ListBox} from '../ListBox';
 
-import {InlinePopover} from './components';
+import {TextField, InlinePopover} from './components';
 
 export interface ComboBoxProps {
   id?: string;
   children?: ReactNode;
   activator: React.ReactElement<TextFieldProps>;
   allowMultiple?: boolean;
-  labelledBy?: string;
-  inlineSuggest?: boolean;
   onOptionSelected(id: string): void;
 }
 
@@ -26,15 +22,13 @@ export function ComboBox({
   activator,
   allowMultiple,
   onOptionSelected,
-  labelledBy,
 }: ComboBoxProps) {
   const [popoverActive, setPopoverActive] = useState(false);
-  const listBoxId = useUniqueId('listBox');
-  const [activeDescendant, setActiveDescendant] = useState('');
-  const [suggestion, setSuggestion] = useState('');
-  const [textfieldId, setTextFieldId] = useState(useUniqueId('textfieldId'));
-  const [labelId, setLabelId] = useState(labelledBy);
-  const listBoxWrapper = useRef<HTMLDivElement>(null);
+  const [activeOptionId, setActiveOptionId] = useState<string>();
+  const [typeAheadText, setTypeAheadText] = useState<string>();
+  const [textFieldId, setTextFieldId] = useState<string>();
+  const [textFieldLabelId, setTextFieldLabelId] = useState<string>();
+  const [listBoxId, setListBoxId] = useState<string>();
   const {isNavigationCollapsed} = useMediaQuery();
 
   const handleSelectOption = (id: string) => {
@@ -45,14 +39,16 @@ export function ComboBox({
   };
 
   const contextValue: ComboBoxContextType = {
-    activeDescendant,
-    setActiveDescendant,
-    suggestion,
-    setSuggestion,
-    textfieldId,
+    activeOptionId,
+    setActiveOptionId,
+    typeAheadText,
+    setTypeAheadText,
+    textFieldId,
     setTextFieldId,
-    labelId,
-    setLabelId,
+    textFieldLabelId,
+    setTextFieldLabelId,
+    listBoxId,
+    setListBoxId,
     onOptionSelected: handleSelectOption,
   };
 
@@ -75,10 +71,11 @@ export function ComboBox({
   const textfieldMarkup = (
     <div
       aria-haspopup="listbox"
-      aria-owns={popoverActive ? listBoxId : undefined}
+      aria-owns={listBoxId}
+      // eslint complaining about aria-controls, which is 1.1 in the textbox
+      // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
       role="combobox"
       aria-expanded={popoverActive}
-      aria-controls={listBoxId}
       onFocus={handleFocus}
       onKeyUp={handleKeyUp}
       tabIndex={-1}
@@ -88,26 +85,16 @@ export function ComboBox({
   );
 
   const focusInput = () => {
-    const input = textfieldId && document.getElementById(textfieldId);
+    const input = textFieldId && document.getElementById(textFieldId);
     if (input) input.focus();
   };
 
+  // Can't get arround loosing the field focus when someone scrolls with the mouse
   const handleStopScroll = ({target}: MouseEvent) => {
     if ((target as HTMLElement).matches(scrollable.selector)) {
       focusInput();
     }
   };
-
-  const listBoxMarkup = children ? (
-    <div
-      ref={listBoxWrapper}
-      role="listbox"
-      arial-labelleby={labelId}
-      id={listBoxId}
-    >
-      <ListBox>{children}</ListBox>
-    </div>
-  ) : null;
 
   const popover = isNavigationCollapsed ? (
     <InlinePopover
@@ -115,7 +102,7 @@ export function ComboBox({
       activator={textfieldMarkup}
       onClose={handleClose}
     >
-      {listBoxMarkup}
+      {children}
     </InlinePopover>
   ) : (
     <Popover
@@ -125,7 +112,7 @@ export function ComboBox({
       preventAutofocus
       fullWidth
     >
-      {listBoxMarkup}
+      {children}
     </Popover>
   );
 
@@ -137,4 +124,4 @@ export function ComboBox({
   );
 }
 
-ComboBox.TextField = Textfield;
+ComboBox.TextField = TextField;

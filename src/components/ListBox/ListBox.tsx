@@ -15,6 +15,8 @@ import {Key} from '../../types';
 import {classNames} from '../../utilities/css';
 import {KeypressListener} from '../KeypressListener';
 import {scrollable} from '../shared';
+import {useUniqueId} from '../../utilities/unique-id';
+import {useComboBox} from '../../utilities/combo-box';
 
 import {ListBoxContext} from './utilities/context/list-box';
 import {Option, OptionGroup} from './components';
@@ -37,18 +39,24 @@ export const ListBox = memo(function ListBox({
     setTrue: enableKeyboardEvents,
     setFalse: disableKeyboardEvents,
   } = useToggle(false);
+  const listId = useUniqueId('ListBox');
   const [navigableItems, setNavigableItems] = useState<string[]>([]);
   const [activeOptionId, setActiveOptionId] = useState<string>();
   const [activeOptionValue, setActiveOptionValue] = useState<string>();
   const scrollableRef = useRef<Element | null>(null);
   const listBoxRef = useRef<HTMLDivElement>(null);
   const totalOptions = useRef<number>(navigableItems.length);
+  const comboBox = useComboBox();
 
   useEffect(() => {
     if (listBoxRef.current) {
       scrollableRef.current = listBoxRef.current.closest(scrollable.selector);
     }
-  }, []);
+    comboBox &&
+      comboBox.setListBoxId &&
+      !comboBox.listBoxId &&
+      comboBox.setListBoxId(listId);
+  }, [comboBox, listId]);
 
   useEffect(() => {
     const updatedNavigableItems = getNavigableItems([children]);
@@ -123,30 +131,31 @@ export const ListBox = memo(function ListBox({
     [activeOptionId, activeOptionValue, onOptionSelect],
   );
 
-  const listenners = keyboardEventsEnabled ? (
-    <React.Fragment>
-      <KeypressListener
-        keyEvent="keydown"
-        keyCode={Key.DownArrow}
-        handler={handleDownArrow}
-      />
-      <KeypressListener
-        keyEvent="keydown"
-        keyCode={Key.UpArrow}
-        handler={handleUpArrow}
-      />
-      <KeypressListener
-        keyEvent="keydown"
-        keyCode={Key.Enter}
-        handler={handleEnter}
-      />
-      <KeypressListener
-        keyEvent="keydown"
-        keyCode={Key.Space}
-        handler={handleSpaceBar}
-      />
-    </React.Fragment>
-  ) : null;
+  const listenners =
+    keyboardEventsEnabled || comboBox ? (
+      <React.Fragment>
+        <KeypressListener
+          keyEvent="keydown"
+          keyCode={Key.DownArrow}
+          handler={handleDownArrow}
+        />
+        <KeypressListener
+          keyEvent="keydown"
+          keyCode={Key.UpArrow}
+          handler={handleUpArrow}
+        />
+        <KeypressListener
+          keyEvent="keydown"
+          keyCode={Key.Enter}
+          handler={handleEnter}
+        />
+        <KeypressListener
+          keyEvent="keydown"
+          keyCode={Key.Space}
+          handler={handleSpaceBar}
+        />
+      </React.Fragment>
+    ) : null;
 
   const handleFocus = () => {
     enableKeyboardEvents();
@@ -160,12 +169,14 @@ export const ListBox = memo(function ListBox({
     }
   };
 
+  const labelledById = comboBox && comboBox.textFieldLabelId;
+
   return children ? (
     <div
       ref={listBoxRef}
       tabIndex={-1}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
+      onFocus={!comboBox ? handleFocus : undefined}
+      onBlur={!comboBox ? handleBlur : undefined}
     >
       {listenners}
       <ListBoxContext.Provider value={listBoxContext}>
@@ -173,8 +184,9 @@ export const ListBox = memo(function ListBox({
           tabIndex={0}
           role="listbox"
           className={listBoxClassName}
-          // aria-labelledby={labelId}
+          aria-labelledby={labelledById}
           aria-activedescendant={activeOptionId}
+          id={listId}
         >
           {children}
         </ul>
